@@ -719,23 +719,43 @@
     let currentQuestion = 0;
     let score = 0;
     let answered = false;
+    let quizQuestions = [];
+
+    function shuffleQuestions(items) {
+      const shuffled = [...items];
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+      }
+      return shuffled;
+    }
+
+    function startQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      quizQuestions = shuffleQuestions(questions);
+      renderQuestion();
+      showScreen(quiz);
+      answerList.querySelector("button")?.focus();
+    }
 
     function showScreen(screen) {
       [intro, quiz, results].forEach((section) => section.classList.toggle("hidden", section !== screen));
     }
 
     function renderQuestion() {
-      const item = questions[currentQuestion];
+      const item = quizQuestions[currentQuestion];
       answered = false;
-      questionCount.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+      questionCount.textContent = `Question ${currentQuestion + 1} of ${quizQuestions.length}`;
       scoreText.textContent = score;
       categoryText.textContent = item.category;
       questionText.textContent = item.question;
       feedback.textContent = "";
       feedback.className = "feedback";
       nextButton.classList.add("hidden");
+      progressTrack.setAttribute("aria-valuemax", quizQuestions.length);
       progressTrack.setAttribute("aria-valuenow", currentQuestion);
-      progressFill.style.width = `${(currentQuestion / questions.length) * 100}%`;
+      progressFill.style.width = `${(currentQuestion / quizQuestions.length) * 100}%`;
       answerList.replaceChildren();
 
       item.answers.forEach((answer, index) => {
@@ -751,7 +771,7 @@
     function chooseAnswer(selected) {
       if (answered) return;
       answered = true;
-      const item = questions[currentQuestion];
+      const item = quizQuestions[currentQuestion];
       const buttons = [...answerList.children];
       buttons.forEach((button) => { button.disabled = true; });
 
@@ -768,7 +788,7 @@
         feedback.classList.add("bad");
       }
 
-      nextButton.textContent = currentQuestion === questions.length - 1
+      nextButton.textContent = currentQuestion === quizQuestions.length - 1
         ? "See your results →"
         : "Next question →";
       nextButton.classList.remove("hidden");
@@ -776,7 +796,7 @@
     }
 
     function finishQuiz() {
-      const percentage = score / questions.length;
+      const percentage = score / quizQuestions.length;
       let emoji;
       let message;
       if (percentage === 1) {
@@ -793,39 +813,27 @@
         message = "Every great explorer starts somewhere. Ready for another launch?";
       }
       document.querySelector("#result-emoji").textContent = emoji;
-      document.querySelector("#final-score").textContent = `${score}/${questions.length}`;
+      document.querySelector("#final-score").textContent = `${score}/${quizQuestions.length}`;
       document.querySelector("#result-message").textContent = message;
       showScreen(results);
       document.querySelector("#restart-button").focus();
     }
 
-    document.querySelector("#start-button").addEventListener("click", () => {
-      currentQuestion = 0;
-      score = 0;
-      renderQuestion();
-      showScreen(quiz);
-      answerList.querySelector("button").focus();
-    });
+    document.querySelector("#start-button").addEventListener("click", startQuiz);
 
     nextButton.addEventListener("click", () => {
       currentQuestion += 1;
-      if (currentQuestion === questions.length) {
-        progressTrack.setAttribute("aria-valuenow", questions.length);
+      if (currentQuestion === quizQuestions.length) {
+        progressTrack.setAttribute("aria-valuenow", quizQuestions.length);
         progressFill.style.width = "100%";
         finishQuiz();
       } else {
         renderQuestion();
-        answerList.querySelector("button").focus();
+        answerList.querySelector("button")?.focus();
       }
     });
 
-    document.querySelector("#restart-button").addEventListener("click", () => {
-      currentQuestion = 0;
-      score = 0;
-      renderQuestion();
-      showScreen(quiz);
-      answerList.querySelector("button").focus();
-    });
+    document.querySelector("#restart-button").addEventListener("click", startQuiz);
   </script>
 </body>
 </html>
